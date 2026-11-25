@@ -55,6 +55,10 @@ h2{font-size:22px;line-height:1.05;letter-spacing:-.01em;margin-bottom:8px}
 .lede{color:var(--muted);font-size:17px;max-width:31em}
 .sub{color:var(--muted);font-size:15px;margin-bottom:18px}
 
+.talk-hint{display:none;align-items:center;gap:10px;margin-top:14px;color:var(--muted);font-size:15px}
+.can-talk .talk-hint{display:flex}
+.talk-icon{flex-shrink:0;width:30px;height:30px;border-radius:50%;border:1px solid var(--chip);color:var(--maroon);display:flex;align-items:center;justify-content:center}
+.talk-icon svg{width:15px;height:15px}
 form{margin-top:40px}
 
 /* About you */
@@ -156,7 +160,7 @@ button[type=submit]:disabled{opacity:.55;pointer-events:none}
 
 .thanks{display:none;margin-top:8px}
 .thanks p{color:var(--muted);font-size:17px;max-width:31em}
-.done form,.done .lede{display:none}
+.done form,.done .lede,.done .talk-hint{display:none !important}
 .done .thanks{display:block}
 .sign{margin-top:48px;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;letter-spacing:.1em;color:var(--maroon)}
 
@@ -180,6 +184,7 @@ button[type=submit]:disabled{opacity:.55;pointer-events:none}
   <p class="eyebrow rise d1">Quick feedback &middot; two minutes</p>
   <h1 class="rise d1">How did we do?</h1>
   <p class="lede rise d2">Please be honest - the good, the bad and the ugly - it's how we keep improving and building something that works for you. Tap what feels right, skip what you like.</p>
+  <p class="talk-hint rise d2"><span class="talk-icon" id="talkIcon"></span>Feel free to waffle - tap the mic in any comment box to talk instead of type.</p>
 
   <form id="form" class="rise d3" novalidate>
 
@@ -217,7 +222,7 @@ button[type=submit]:disabled{opacity:.55;pointer-events:none}
     <div class="field">
       <label for="better" id="betterLabel">Anything we could have done differently?</label>
       <span class="hint">Even a few words helps.</span>
-      <div class="box"><textarea id="better" name="better" placeholder="Optional"></textarea></div>
+      <div class="box"><textarea id="better" name="better"></textarea></div>
     </div>
 
     <div class="field">
@@ -232,7 +237,7 @@ button[type=submit]:disabled{opacity:.55;pointer-events:none}
     <div class="field">
       <label for="upcoming">Anything coming up we could help with?</label>
       <span class="hint">Events on the horizon, early ideas, or a quick sense check.</span>
-      <div class="box"><textarea id="upcoming" name="upcoming" placeholder="Optional"></textarea></div>
+      <div class="box"><textarea id="upcoming" name="upcoming"></textarea></div>
     </div>
 
     <div class="trap" aria-hidden="true"><input type="text" name="website" tabindex="-1" autocomplete="off"></div>
@@ -244,8 +249,7 @@ button[type=submit]:disabled{opacity:.55;pointer-events:none}
   </form>
 
   <div class="thanks" id="thanks">
-    <p>Thank you, that's really helpful. I'll be in touch if anything you've mentioned is something we can help with.</p>
-    <p class="sign">Rory</p>
+    <p>Thank you! That's really helpful. We'll be in touch if there's anything worth picking up.</p>
   </div>
 </main>
 
@@ -317,6 +321,7 @@ went.setAttribute('aria-hidden', 'true');
 var Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
 if (Speech) {
   document.body.classList.add('can-talk');
+  document.getElementById('talkIcon').innerHTML = MIC;
   var active = null;
   document.querySelectorAll('.box').forEach(function (box) {
     var ta = box.querySelector('textarea');
