@@ -123,6 +123,17 @@ textarea:focus,input[type=text]:focus,input[type=email]:focus{outline:none;borde
 .mic.on{background:var(--maroon);color:var(--cream);animation:pulse 1.4s ease-in-out infinite}
 @keyframes pulse{50%{box-shadow:0 0 0 6px rgba(128,1,39,.12)}}
 
+/* Reason chips: open under a rating of Could be better or Fine */
+.reveal{display:grid;grid-template-rows:0fr;opacity:0;transition:grid-template-rows .5s ease,opacity .5s ease}
+.reveal>div{overflow:hidden}
+.row.needs-why .why,.reveal.open{grid-template-rows:1fr;opacity:1}
+.reasons{padding-top:14px}
+.reasons-q{display:block;font-size:14.5px;color:var(--muted);margin-bottom:10px}
+.reasons .chips label{font-size:11px;padding:7px 11px}
+.chip-gap{width:6px}
+.chips label.na{border-style:dashed;color:var(--muted)}
+.chips input:checked+label.na{background:var(--muted);border-color:var(--muted);color:var(--cream)}
+
 /* Artist by artist */
 .deep-link{
   display:none;appearance:none;border:none;background:none;cursor:pointer;margin-top:12px;padding:0;
@@ -210,9 +221,9 @@ button[type=submit]:disabled{opacity:.55;pointer-events:none}
 <main class="wrap">
   <div class="wordmark rise" aria-label="Miro Sounds"><span>Miro</span><span>Sounds</span></div>
 
-  <p class="eyebrow rise d1">Quick feedback &middot; two minutes</p>
+  <p class="eyebrow rise d1">Quick feedback &middot; 2-5 minutes</p>
   <h1 class="rise d1">How did we do?</h1>
-  <p class="lede rise d2">Please be honest - the good, the bad and the ugly - it's how we keep improving and building something that works for you. Tap what feels right, skip what you like.</p>
+  <p class="lede rise d2">Please be honest - the good, the bad (and the ugly) - it's how we keep improving and building something that works for you. Tap what feels right, skip what you like.</p>
   <p class="talk-hint rise d2"><span class="talk-icon" id="talkIcon"></span>Feel free to waffle - tap the mic in any comment box to talk instead of type.</p>
 
   <form id="form" class="rise d3" novalidate>
@@ -230,6 +241,10 @@ button[type=submit]:disabled{opacity:.55;pointer-events:none}
       <span class="label">What happened next?</span>
       <span class="hint">Tick any that apply.</span>
       <div class="chips" id="next"></div>
+      <div class="reveal" id="lostWrap"><div><div class="reasons">
+        <span class="reasons-q">What swung it?</span>
+        <div class="chips" id="lost"></div>
+      </div></div></div>
     </div>
 
     <div class="went" id="went"><div><div class="went-inner">
@@ -281,7 +296,7 @@ button[type=submit]:disabled{opacity:.55;pointer-events:none}
   </form>
 
   <div class="thanks" id="thanks">
-    <p>Thank you! That's really helpful. We'll be in touch if there's anything worth picking up.</p>
+    <p>Thank you! Very much appreciated &#10024;</p>
   </div>
 </main>
 
@@ -303,6 +318,26 @@ var WENT = [
   ['admin', 'Booking admin & payments']
 ];
 var CHOICES = ['Could be better', 'Fine', 'Spot on'];
+var NOT_REACHED = "Didn't get this far";
+var REASONS = {
+  discovery: ['Brief not fully understood', 'We needed more steer from you', 'Not clear how working with you works', 'Felt too long or involved', 'Slow to get going'],
+  artists: ['Not enough options', 'Too many options', 'Not quite right for the brief', 'Too safe or predictable', 'Calibre not as expected'],
+  pricing: ['Higher than expected', 'Lower than expected', "Unclear what's included", 'Needed more guidance on costs'],
+  presentation: ['Hard to compare options', 'Not enough detail', 'Too much information', "Didn't bring the artists to life", 'Hard to share with our client'],
+  communication: ['Replies could have been quicker', 'Could have been more proactive', 'Not always clear', 'Options took too long to arrive'],
+  logistics: ['Things felt last-minute', 'Details unclear or missing', 'We had to chase', 'Travel or timings not smooth'],
+  onsite: ['Not visible enough on the day', 'Too visible', 'Timings slipped', 'Issues not handled quickly', 'Poor coordination with other suppliers'],
+  performance: ['Energy not quite right', 'Track choices not quite right', 'Sound or set-up issues', 'Timekeeping or professionalism'],
+  admin: ['Contracts slow or unclear', 'Invoices unclear', "Payment terms didn't suit", 'Too much admin on our side']
+};
+var LOST = ["Artists weren't quite right", 'Over budget', 'Artists were no longer available', 'Only booked part of it', 'We booked artists we already work with', 'We went with another music company', 'Client went with their own contacts or finds'];
+function esc(t) { return t.replace(/&/g, '&amp;').replace(/"/g, '&quot;'); }
+function tickChips(name, list) {
+  return list.map(function (v, i) {
+    var id = name + '_' + i;
+    return '<input type="checkbox" name="' + name + '" id="' + id + '" value="' + esc(v) + '"><label for="' + id + '">' + esc(v) + '</label>';
+  }).join('');
+}
 var NEXT = ['We went with Miro Sounds', 'We went another way', 'Event postponed or cancelled', 'Still deciding'];
 var WENT_WITH_US = NEXT[0];
 
@@ -310,21 +345,38 @@ var MIC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-wid
 
 function buildRows(list, el) {
   list.forEach(function (r) {
+    var key = r[0];
     var row = document.createElement('div');
     row.className = 'row';
-    var html = '<div class="row-top"><span class="row-label" id="l-' + r[0] + '">' + r[1] + '</span>' +
-               '<span class="chips" role="radiogroup" aria-labelledby="l-' + r[0] + '">';
-    CHOICES.forEach(function (c, i) {
-      var id = r[0] + i;
-      html += '<input type="radio" name="' + r[0] + '" id="' + id + '" value="' + c + '">' +
+    var choices = CHOICES.slice();
+    var html = '<div class="row-top"><span class="row-label" id="l-' + key + '">' + r[1] + '</span>' +
+               '<span class="chips" role="radiogroup" aria-labelledby="l-' + key + '">';
+    choices.forEach(function (c, i) {
+      var id = key + i;
+      html += '<input type="radio" name="' + key + '" id="' + id + '" value="' + c + '">' +
               '<label for="' + id + '">' + c + '</label>';
     });
-    html += '</span></div><div class="note"><div><div class="box">' +
-            '<textarea name="' + r[0] + 'Note" placeholder="Add a comment (optional)" aria-label="Comment on ' + r[1] + '"></textarea>' +
+    if (key === 'pricing') {
+      html += '<span class="chip-gap"></span><input type="radio" name="pricing" id="pricingNA" value="' + esc(NOT_REACHED) + '">' +
+              '<label for="pricingNA" class="na">' + NOT_REACHED + '</label>';
+    }
+    html += '</span></div>' +
+            '<div class="reveal why"><div><div class="reasons">' +
+            '<span class="reasons-q">What would have made it spot on?</span>' +
+            '<div class="chips">' + tickChips(key + 'Why', REASONS[key]) + '</div>' +
+            '</div></div></div>' +
+            '<div class="note"><div><div class="box">' +
+            '<textarea name="' + key + 'Note" placeholder="Add a comment (optional)" aria-label="Comment on ' + r[1] + '"></textarea>' +
             '</div></div></div>';
     row.innerHTML = html;
+    var note = row.querySelector('textarea');
     row.addEventListener('change', function (e) {
-      if (e.target.type === 'radio') row.classList.add('rated');
+      if (e.target.type !== 'radio') return;
+      var v = e.target.value;
+      var na = v === NOT_REACHED;
+      row.classList.toggle('rated', !na);
+      row.classList.toggle('needs-why', v === CHOICES[0] || v === CHOICES[1]);
+      note.placeholder = v === CHOICES[2] ? 'Anything that would make it even better?' : 'Add a comment (optional)';
     });
     el.appendChild(row);
   });
@@ -338,11 +390,14 @@ NEXT.forEach(function (n, i) {
   nextEl.insertAdjacentHTML('beforeend',
     '<input type="checkbox" name="next" id="next' + i + '" value="' + n + '"><label for="next' + i + '">' + n + '</label>');
 });
+var lostEl = document.getElementById('lost');
+lostEl.innerHTML = tickChips('lost', LOST);
 var went = document.getElementById('went');
 var betterLabel = document.getElementById('betterLabel');
 function wentWithUs() { return document.getElementById('next0').checked; }
 nextEl.addEventListener('change', function () {
   var yes = wentWithUs();
+  document.getElementById('lostWrap').classList.toggle('open', document.getElementById('next1').checked);
   went.classList.toggle('open', yes);
   document.getElementById('wentQuote').classList.toggle('open', yes);
   went.setAttribute('aria-hidden', yes ? 'false' : 'true');
@@ -424,6 +479,9 @@ document.getElementById('deepLink').addEventListener('click', function () {
 document.getElementById('addArtist').addEventListener('click', function () {
   addArtist().querySelector('.artist-name').focus();
 });
+function ticked(name) {
+  return Array.prototype.map.call(form.querySelectorAll('input[name="' + name + '"]:checked'), function (c) { return c.value; }).join(', ');
+}
 function artistDetail() {
   return Array.prototype.map.call(document.querySelectorAll('.artist'), function (a) {
     var n = a.querySelector('.artist-name').value.trim();
@@ -466,12 +524,14 @@ form.addEventListener('submit', function (e) {
     var picked = form.querySelector('input[name="' + r[0] + '"]:checked');
     data[r[0]] = picked ? picked.value : '';
     data[r[0] + 'Note'] = form[r[0] + 'Note'].value.trim();
+    data[r[0] + 'Why'] = (picked && (picked.value === CHOICES[0] || picked.value === CHOICES[1])) ? ticked(r[0] + 'Why') : '';
   });
   if (yes) {
     data.quote = form.quote.value.trim();
     data.quoteOk = document.getElementById('quoteOk').checked ? 'Yes' : 'No';
   }
   data.artistDetail = artistDetail();
+  data.lostWhy = document.getElementById('next1').checked ? ticked('lost') : '';
   data.better = form.better.value.trim();
   var again = form.querySelector('input[name=again]:checked');
   data.again = again ? again.value : '';
