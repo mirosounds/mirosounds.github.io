@@ -236,14 +236,6 @@ button[type=submit]:disabled{opacity:.55;pointer-events:none}
       <h2>How it ran once everything was booked</h2>
       <div class="rows" id="rowsWent" style="margin-top:18px"></div>
 
-      <div class="field">
-        <label for="quote">Would you be happy to share a few words about working with us?</label>
-        <span class="hint">Anything you'd be comfortable with us quoting about your experience.</span>
-        <div class="box"><textarea id="quote" name="quote" placeholder="Optional"></textarea></div>
-        <label class="tick"><input type="checkbox" id="quoteOk">
-          <span>Happy for Miro Sounds to use this as a testimonial?
-          <small>We'll send it to you in advance if it needs clearing up or clarifying.</small></span></label>
-      </div>
     </div></div></div>
 
     <div class="divider"></div>
@@ -268,6 +260,17 @@ button[type=submit]:disabled{opacity:.55;pointer-events:none}
       <span class="hint">Events on the horizon, early ideas, or a quick sense check.</span>
       <div class="box"><textarea id="upcoming" name="upcoming"></textarea></div>
     </div>
+
+    <div class="went" id="wentQuote"><div><div>
+    <div class="field">
+      <label for="quote">Would you be happy to share a few words about working with us?</label>
+      <span class="hint">Anything you'd be comfortable with us quoting about your experience.</span>
+      <div class="box"><textarea id="quote" name="quote"></textarea></div>
+      <label class="tick"><input type="checkbox" id="quoteOk">
+        <span>Happy for Miro Sounds to use this as a testimonial?
+        <small>We'll send it to you in advance if it needs clearing up or clarifying.</small></span></label>
+    </div>
+    </div></div></div>
 
     <div class="trap" aria-hidden="true"><input type="text" name="website" tabindex="-1" autocomplete="off"></div>
 
@@ -341,6 +344,7 @@ function wentWithUs() { return document.getElementById('next0').checked; }
 nextEl.addEventListener('change', function () {
   var yes = wentWithUs();
   went.classList.toggle('open', yes);
+  document.getElementById('wentQuote').classList.toggle('open', yes);
   went.setAttribute('aria-hidden', yes ? 'false' : 'true');
   betterLabel.textContent = yes ? 'Anything we could do even better next time?' : 'Anything we could have done differently?';
 });
